@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Plano Cartesiano Interativo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    canvas {
+      border: 1px solid #000;
+      background-color: #f9f9f9;
+      margin-top: 20px;
+    }
+    #distancia, #formula {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+    #formula {
+      color: #333;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Plano Cartesiano Interativo</h1>
+  <p>Clique em dois pontos para calcular a distância entre eles.</p>
+  <canvas id="plano" width="600" height="600"></canvas>
+  <div id="distancia"></div>
+  <div id="formula"></div>
+
+  <script>
+    const canvas = document.getElementById('plano');
+    const ctx = canvas.getContext('2d');
+    const largura = canvas.width;
+    const altura = canvas.height;
+    const origem = { x: largura / 2, y: altura / 2 };
+    let pontos = [];
+
+    // Desenhar plano cartesiano com grade, eixos e números
+    function desenharPlano() {
+      ctx.clearRect(0, 0, largura, altura);
+
+      // Grade
+      ctx.strokeStyle = '#eee';
+      ctx.font = '10px Arial';
+      ctx.fillStyle = '#000';
+
+      for (let i = 0; i <= largura; i += 20) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, altura);
+        ctx.stroke();
+
+        // Numerar eixo X
+        const xCart = (i - origem.x) / 20;
+        if (xCart !== 0) {
+          ctx.fillText(xCart, i + 2, origem.y + 12);
+        }
+      }
+
+      for (let j = 0; j <= altura; j += 20) {
+        ctx.beginPath();
+        ctx.moveTo(0, j);
+        ctx.lineTo(largura, j);
+        ctx.stroke();
+
+        // Numerar eixo Y
+        const yCart = (origem.y - j) / 20;
+        if (yCart !== 0) {
+          ctx.fillText(yCart, origem.x + 5, j - 2);
+        }
+      }
+
+      // Eixos
+      ctx.strokeStyle = '#000';
+      ctx.beginPath();
+      ctx.moveTo(0, origem.y);
+      ctx.lineTo(largura, origem.y);
+      ctx.moveTo(origem.x, 0);
+      ctx.lineTo(origem.x, altura);
+      ctx.stroke();
+
+      // Pontos
+      pontos.forEach(p => desenharPonto(p.x, p.y));
+    }
+
+    function desenharPonto(x, y) {
+      ctx.fillStyle = 'red';
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+
+    function canvasParaCartesiano(x, y) {
+      return {
+        x: (x - origem.x) / 20,
+        y: (origem.y - y) / 20
+      };
+    }
+
+    function cartesianoParaCanvas(x, y) {
+      return {
+        x: x * 20 + origem.x,
+        y: origem.y - y * 20
+      };
+    }
+
+    function calcularDistancia(p1, p2) {
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // Animar linha entre dois pontos
+    function animarLinha(p1, p2, callback) {
+      let t = 0;
+      const steps = 60;
+
+      function animate() {
+        desenharPlano();
+
+        // Desenhar linha parcial
+        ctx.strokeStyle = 'blue';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        const x = p1.x + (p2.x - p1.x) * t;
+        const y = p1.y + (p2.y - p1.y) * t;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+
+        t += 1 / steps;
+
+        if (t <= 1) {
+          requestAnimationFrame(animate);
+        } else if (callback) {
+          callback();
+        }
+      }
+
+      animate();
+    }
+
+    canvas.addEventListener('click', function(event) {
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      desenharPonto(x, y);
+      pontos.push({ x, y });
+
+      if (pontos.length === 2) {
+        const p1Canvas = pontos[0];
+        const p2Canvas = pontos[1];
+
+        const p1Cart = canvasParaCartesiano(p1Canvas.x, p1Canvas.y);
+        const p2Cart = canvasParaCartesiano(p2Canvas.x, p2Canvas.y);
+
+        const dx = (p2Cart.x - p1Cart.x);
+        const dy = (p2Cart.y - p1Cart.y);
+        const distancia = calcularDistancia(p1Cart, p2Cart);
+
+        animarLinha(p1Canvas, p2Canvas, () => {
+          document.getElementById('distancia').innerText =
+            `Distância entre os pontos: ${distancia.toFixed(2)} unidades`;
+
+          document.getElementById('formula').innerHTML =
+            `Usando a fórmula: √[(x₂ - x₁)² + (y₂ - y₁)²] = ` +
+            `√[(${dx.toFixed(2)})² + (${dy.toFixed(2)})²] = ` +
+            `√[${(dx*dx).toFixed(2)} + ${(dy*dy).toFixed(2)}] = ` +
+            `<strong>${distancia.toFixed(2)}</strong>`;
+
+          // Resetar após alguns segundos
+          setTimeout(() => {
+            pontos = [];
+            document.getElementById('distancia').innerText = '';
+            document.getElementById('formula').innerText = '';
+            desenharPlano();
+          }, 6000);
+        });
+      }
+    });
+
+    // Inicial
+    desenharPlano();
+  </script>
+</body>
+</html>
