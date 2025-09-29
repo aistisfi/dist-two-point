@@ -41,7 +41,6 @@
     const origem = { x: largura / 2, y: altura / 2 };
     let pontos = [];
 
-    // Desenhar plano cartesiano com grade, eixos e números
     function desenharPlano() {
       ctx.clearRect(0, 0, largura, altura);
 
@@ -56,7 +55,6 @@
         ctx.lineTo(i, altura);
         ctx.stroke();
 
-        // Numerar eixo X
         const xCart = (i - origem.x) / 20;
         if (xCart !== 0) {
           ctx.fillText(xCart, i + 2, origem.y + 12);
@@ -69,7 +67,6 @@
         ctx.lineTo(largura, j);
         ctx.stroke();
 
-        // Numerar eixo Y
         const yCart = (origem.y - j) / 20;
         if (yCart !== 0) {
           ctx.fillText(yCart, origem.x + 5, j - 2);
@@ -103,28 +100,37 @@
       };
     }
 
-    function cartesianoParaCanvas(x, y) {
-      return {
-        x: x * 20 + origem.x,
-        y: origem.y - y * 20
-      };
-    }
-
     function calcularDistancia(p1, p2) {
       const dx = p2.x - p1.x;
       const dy = p2.y - p1.y;
       return Math.sqrt(dx * dx + dy * dy);
     }
 
-    // Animar linha entre dois pontos
-    function animarLinha(p1, p2, callback) {
+    function desenharTriangulo(p1, p2) {
+      // Desenhar linha horizontal (cateto)
+      ctx.strokeStyle = '#00aa00';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p1.y);
+      ctx.stroke();
+
+      // Desenhar linha vertical (cateto)
+      ctx.beginPath();
+      ctx.moveTo(p2.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+    }
+
+    // Animação da hipotenusa
+    function animarHipotenusa(p1, p2, callback) {
       let t = 0;
       const steps = 60;
 
       function animate() {
         desenharPlano();
+        desenharTriangulo(p1, p2);
 
-        // Desenhar linha parcial
         ctx.strokeStyle = 'blue';
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -135,7 +141,6 @@
         ctx.stroke();
 
         t += 1 / steps;
-
         if (t <= 1) {
           requestAnimationFrame(animate);
         } else if (callback) {
@@ -165,7 +170,7 @@
         const dy = (p2Cart.y - p1Cart.y);
         const distancia = calcularDistancia(p1Cart, p2Cart);
 
-        animarLinha(p1Canvas, p2Canvas, () => {
+        animarHipotenusa(p1Canvas, p2Canvas, () => {
           document.getElementById('distancia').innerText =
             `Distância entre os pontos: ${distancia.toFixed(2)} unidades`;
 
@@ -175,7 +180,7 @@
             `√[${(dx*dx).toFixed(2)} + ${(dy*dy).toFixed(2)}] = ` +
             `<strong>${distancia.toFixed(2)}</strong>`;
 
-          // Resetar após alguns segundos
+          // Resetar após 6 segundos
           setTimeout(() => {
             pontos = [];
             document.getElementById('distancia').innerText = '';
@@ -186,9 +191,7 @@
       }
     });
 
-    // Inicial
     desenharPlano();
   </script>
 </body>
 </html>
-
